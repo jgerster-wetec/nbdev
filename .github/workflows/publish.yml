@@ -1,6 +1,5 @@
-name:
-  Publish nbdev to private GitLab Package Registry
-  # on: [push]
+name: Publish nbdev to private GitLab Package Registry
+on: [workflow_dispatch]
 jobs:
   publish:
     runs-on: ubuntu-latest
