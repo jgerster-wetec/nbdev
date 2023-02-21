@@ -1,4 +1,4 @@
-name: Publish nbdev to private GitLab Package Registry
+name: Publish to private GitLab Package Registry
 on: [workflow_dispatch]
 jobs:
   publish:
@@ -6,14 +6,22 @@ jobs:
     steps:
       - name: Install twine
         run: |
-          sudo apt update 
-          sudo apt install twine
+          sudo apt-get update
+          sudo apt-get install twine
           echo "Twine has been installed on the runner."
       - name: Check out repository code
         uses: actions/checkout@v3
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+      - name: Publish package with twine
+        env:
+          PASSWORD: ${{ secrets.GITLAB_DEPLOY_TOKEN_23 }}
         run: |
-          ls ${{ github.workspace }}
+          python -m build
+          twine upload \
+            --non-interactive \
+            --repository-url https://gitlab.projekt.uni-hannover.de/api/v4/projects/2712/packages/pypi \
+            --username gitlab+deploy-token-23 \
+            --password $PASSWORD \
+            dist/*
       - run: echo "🍏 This job's status is ${{ job.status }}."
