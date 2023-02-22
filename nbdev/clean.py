@@ -180,6 +180,10 @@ def _git_root():
     try: return Path(run('git rev-parse --show-toplevel'))
     except OSError: return None
 
+def _git_hooks():
+    try: return Path(run('git rev-parse --git-dir')) / "hooks"
+    except OSError: return None
+
 # %% ../nbs/api/11_clean.ipynb 43
 @call_parse
 def nbdev_install_hooks():
@@ -196,7 +200,7 @@ def nbdev_install_hooks():
     if repo_path is None:
         sys.stderr.write('Not in a git repository, git hooks cannot be installed.\n')
         return
-    hook_path = repo_path/'.git'/'hooks'
+    hook_path = _git_hooks()
     fn = hook_path/'post-merge'
     hook_path.mkdir(parents=True, exist_ok=True)
     fn.write_text("#!/bin/bash\nnbdev_trust")
