@@ -18,10 +18,10 @@ jobs:
           pip install twine
       - name: Publish package with twine
         env:
-          TWINE_PASSWORD: ${{ secrets.GITLAB_DEPLOY_TOKEN_23 }}
+          TWINE_PASSWORD: ${{ secrets.GITLAB_DEPLOY_TOKEN_2 }}
         run: |
           python -m build
-          TWINE_USERNAME='gitlab+deploy-token-23' \
-          TWINE_REPOSITORY_URL='https://gitlab.projekt.uni-hannover.de/api/v4/projects/2712/packages/pypi' \
+          TWINE_USERNAME='gitlab+deploy-token-2' \
+          TWINE_REPOSITORY_URL='https://gitlab.ees-warehouse.de/api/v4/projects/2712/packages/pypi' \
           twine upload --non-interactive --verbose dist/*
       - run: echo "🍏 This job's status is ${{ job.status }}."
