@@ -201,8 +201,9 @@ def _get_conda_meta():
     doc_url = (cfg.doc_host + cfg.doc_baseurl) if (cfg.doc_host and cfg.doc_baseurl) else url
     dev_url = cfg.git_url if cfg.git_url else url
 
-    hostreqs = ['pip', 'packaging', f'python >={cfg.min_python}']
-    if cfg.get('requirements'): reqs = hostreqs[-1:] + cfg.requirements.split()
+    hostreqs = ['packaging', f'python >={cfg.min_python}']
+    reqs = hostreqs+[]
+    if cfg.get('requirements'): reqs += cfg.requirements.split()
     if cfg.get('conda_requirements'): reqs += cfg.conda_requirements.split()
 
     pypi = pypi_json(f'{name}/{ver}')
@@ -239,11 +240,11 @@ def write_conda_meta(path='conda'):
     _write_yaml(path, *_get_conda_meta())
 
 # %% ../nbs/api/18_release.ipynb 43
-# This function is used as a utility for creating HF spaces.
-def write_requirements(directory=None):
+@call_parse
+def write_requirements(path:str=''):
     "Writes a `requirements.txt` file to `directory` based on settings.ini."
     cfg = get_config()
-    d = Path(directory) if directory else cfg.config_path
+    d = Path(path) if path else cfg.config_path
     req = '\n'.join([cfg.get(k, '').replace(' ', '\n') for k in ['requirements', 'pip_requirements']])
     (d/'requirements.txt').mk_write(req)
 

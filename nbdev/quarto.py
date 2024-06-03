@@ -3,7 +3,7 @@
 # %% ../nbs/api/14_quarto.ipynb 3
 from __future__ import annotations
 import subprocess,sys,shutil,ast,warnings,traceback
-from os import system, uname
+from os import system
 from contextlib import contextmanager
 
 from .config import *
@@ -30,6 +30,7 @@ def _sprun(cmd):
 BASE_QUARTO_URL='https://www.quarto.org/download/latest/'
 
 def _install_linux():
+    from os import uname
     machine = 'arm' if uname().machine in ('arm64', 'aarch64', 'armv8', 'armv8l') else 'amd'
     system(f'curl -LO {BASE_QUARTO_URL}quarto-linux-{machine}64.deb')
     system(f'sudo dpkg -i quarto-linux-{machine}64.deb && rm quarto-linux-{machine}64.deb')
@@ -310,6 +311,7 @@ def nbdev_preview(
     path:str=None, # Path to notebooks
     port:int=None, # The port on which to run preview
     host:str=None, # The host on which to run preview
+    no_browser:bool=False, # Do not open a browser
     n_workers:int=defaults.cpus,  # Number of workers
     **kwargs):
     "Preview docs locally"
@@ -318,6 +320,7 @@ def nbdev_preview(
     xtra = []
     if port: xtra += ['--port', str(port)]
     if host: xtra += ['--host', host]
+    if no_browser: xtra += ['--no-browser']
 
     def _f(e):
         res = _proc_file(Path(e.src_path), cache, path)

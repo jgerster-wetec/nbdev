@@ -25,7 +25,7 @@ from contextlib import redirect_stdout
 import os, tarfile, sys
 
 # %% auto 0
-__all__ = ['nbdev_filter', 'extract_tgz', 'nbdev_new', 'chelp']
+__all__ = ['mapping', 'nbdev_filter', 'extract_tgz', 'nbdev_new', 'nbdev_update_license', 'chelp']
 
 # %% ../nbs/api/13_cli.ipynb 5
 @call_parse
@@ -67,7 +67,7 @@ def _render_nb(fn, cfg):
 def _update_repo_meta(cfg):
     "Enable gh pages and update the homepage and description in your GitHub repo."
     token=os.getenv('GITHUB_TOKEN')
-    if token: 
+    if token:
         from ghapi.core import GhApi
         api = GhApi(owner=cfg.user, repo=cfg.repo, token=token)
         try: api.repos.update(homepage=f'{cfg.doc_host}{cfg.doc_baseurl}', description=cfg.description)
@@ -85,13 +85,28 @@ def nbdev_new(**kwargs):
     _update_repo_meta(cfg)
 
     path = Path()
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', UserWarning)
-        tag = GhApi(gh_host='https://api.github.com', authenticate=False).repos.get_latest_release('fastai', 'nbdev-template').tag_name
-    url = f"https://github.com/fastai/nbdev-template/archive/{tag}.tar.gz"
-    extract_tgz(url)
-    tmpl_path = path/f'nbdev-template-{tag}'
 
+    _ORG_OR_USR = 'fastai'
+    _REPOSITORY = 'nbdev-template'
+    _TEMPLATE = f'{_ORG_OR_USR}/{_REPOSITORY}'
+    template = kwargs.get('template', _TEMPLATE)
+    try:
+        org_or_usr, repo = template.split('/')
+    except ValueError:
+        org_or_usr, repo = _ORG_OR_USR, _REPOSITORY
+
+
+    tag = kwargs.get('tag', None)
+    if tag is None:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+
+            tag = GhApi(gh_host='https://api.github.com', authenticate=False).repos.get_latest_release(org_or_usr, repo).tag_name
+
+    url = f"https://github.com/{org_or_usr}/{repo}/archive/{tag}.tar.gz"
+    extract_tgz(url)
+    tmpl_path = path/f'{repo}-{tag}'
+    
     cfg.nbs_path.mkdir(exist_ok=True)
     nbexists = bool(first(cfg.nbs_path.glob('*.ipynb')))
     _nbs_path_sufs = ('.ipynb','.css')
@@ -108,7 +123,47 @@ def nbdev_new(**kwargs):
     nbdev_export.__wrapped__()
     nbdev_readme.__wrapped__()
 
-# %% ../nbs/api/13_cli.ipynb 15
+# %% ../nbs/api/13_cli.ipynb 13
+mapping = {
+  'mit': 'mit',
+  'apache2': 'apache-2.0',
+  'gpl2': 'gpl-2.0',
+  'gpl3': 'gpl-3.0',
+  'bsd3': 'bsd-3-clause'
+}
+
+# %% ../nbs/api/13_cli.ipynb 14
+@call_parse
+def nbdev_update_license(
+    to: str=None, # update license to
+):
+    "Allows you to update the license of your project."
+    from ghapi.core import GhApi
+    warnings.filterwarnings("ignore")
+    avail_lic = GhApi().licenses.get_all_commonly_used().map(lambda x: x['key'])
+
+    cfg = get_config()
+    curr_lic = cfg['license']
+
+    mapped = mapping.get(to, None)
+
+    if mapped not in avail_lic: raise ValueError(f"{to} is not an available license")
+    body = GhApi().licenses.get(mapped)['body']
+
+    body = body.replace('[year], [fullname]', cfg['copyright'])
+    body = body.replace('[year] [fullname]', cfg['copyright'])
+
+    content = open("settings.ini", "r").read()
+    content = re.sub(r"^(license\s*=\s*).*?$", r"\1 " + to, content, flags=re.MULTILINE)
+
+    config = open("settings.ini", "w")
+    config.write(content)
+
+    lic = open('LICENSE', 'w')
+    lic.write(body)
+    print(f"License updated from {curr_lic} to {to}")
+
+# %% ../nbs/api/13_cli.ipynb 17
 @call_parse
 def chelp():
     "Show help for all console scripts"
